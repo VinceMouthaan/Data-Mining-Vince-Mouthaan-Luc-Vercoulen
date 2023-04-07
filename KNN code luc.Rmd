@@ -1,0 +1,86 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+---
+title: "KNN project"
+output: html_document
+---
+Loading the required packages.
+
+```{r}
+library(dplyr)
+library(class)
+library(caret)
+```
+
+#Business understanding
+In this model we are going to predict with a KNN model who has diabetes. Diabetes prevents your body to turn food into energy. If this system is not working, it could lead to dangerous health conditions. Diabetes can be treated and be recognized in early stages before it turns into an urgent case by doing some testing (blood glucose levels). People with diabetes can life a long life but they always need to be aware of their sucar rate in their blood. 
+
+#Data understanding 
+The dataset is orginially retrieved from National Institute of Diabetes and Digestive and Kidney Diseases. 
+importing the dataset
+```{r}
+url <- "https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/KNN-diabetes.csv"
+rawDF <- read.csv(url)
+```
+With the str() funtion we can get a quick look of the data. We can now see that the dataset has 768 rows and 9 collums. All the values are numbers but only the Diabetes Pedigree funtion and the BMI are floating numbers. 
+```{r}
+str(rawDF)
+```
+We can use the `summary` function to see a summary information of each variable. you can see that the insulin values have a much greater range than the pregnancies. The fact that the different values have different ranges makes us have to use a normilize funtion to make sure that every variable has the same impact on the outcome. 
+```{r}
+summary(rawDF)
+```
+#Data preparation
+The `outcome` variable has the values we need to predict, so later on we have to make a new dataset where the last collum is removed. The meaning of "0 = negative" and "1 = positive".We need to set level and label for the outcome so that R knows that there are categories. The factor funtion is used to turn a vector into a factor.
+```{r}
+rawDF$Outcome <- factor(rawDF$Outcome, levels = c(0, 1), labels = c("Negative", "Positive")) %>%  relevel("Positive")
+```
+Because of the different ranges we have to normalize the variables. We first have to create this funtion.
+```{r}
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))}
+```
+We don't want to lose our original dataset so we first make a new one named 'CleanDF'. then we create a dataset without the collum of the outcome. We only select collum 1 till 8 because collum 9 are the labels of the outcome and we don't wan't to normalize this variable. 
+```{r}
+cleanDF <- rawDF[-9]
+```
+Now its time to apply the normalize funtion on the new dataset called 'cleanDF'
+```{r}
+cleanDF <- normalize(cleanDF)
+```
+Printing a summery to check if everything is normalized.
+```{r}
+summary(cleanDF)
+```
+To check if our moddel works, we have to split our data set into two different sets. This allaws us to eventueally check if our model works. Our dataset has 768 rows so there will be two sets of 384 rows. One trainset and one testset. These sets are made of the CleandF because here all the values are normalized and this is what we want for our model. 
+```{r}
+trainset <- cleanDF[1:384,]
+testset <- cleanDF[385:768,]
+```
+For our model we also need two datasets with only the outcome as variable. For this we schoul use the rawDF because in the other datasets there is no longer a variable named outcome. 
+```{r}
+trainset_labels <- select(rawDF[1:384,], Outcome)
+testset_labels <- select(rawDF[385:768,], Outcome)
+```
+
+#Modelling & evalution 
+We will use the KNN predictive model out of the class package. It will take the train_set and train_set_labels and makes a predictive model. This predictive model will be applied on the test_set and test_set labels. After this we will know how ofter the model is wright or wrong. 
+
+```{r}
+cleanDF_test_pred <- knn(train = as.matrix(trainset), test = as.matrix(testset), cl= as.matrix(trainset_labels), k=10)
+head(cleanDF_test_pred)
+```
+Now we made our predictive model. lets compare the outcome of the prediction with the labels of our test set. 
+```{r}
+confusionMatrix(cleanDF_test_pred, testset_labels[[1]], positive = NULL, dnn = c("prediction", "TRUE"))
+```
+
+
+
+
+
+
+
+
